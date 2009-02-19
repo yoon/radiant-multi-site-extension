@@ -22,7 +22,18 @@ namespace :radiant do
           mkdir_p RAILS_ROOT + directory
           cp file, RAILS_ROOT + path
         end
-      end  
+      end
+      
+      desc "Transforms an old virtual domain setup into multi_site setup"
+      task :transform => :environment do
+        @vdp = Page.find_all_by_class_name("VirtualDomainPage")
+        @vdp.each{|page| page.update_attributes(:class_name => "Page", :title => %Q(#{page.title} Virtual Domain #{page.id}) )}
+        @pages = Page.find_all_by_parent_id_and_class_name(1,"Page")
+        @pages.each do |page|
+          Site.create(:domain => page.slug.gsub("-","."), :base_domain => page.slug.gsub("-","."), :name => (x = page.title.gsub(/[^A-Z]/,"").gsub(/NR([A-Z]+)/,'\1')).blank? ? page.title : x, :homepage_id => page.id)
+          page.update_attributes(:parent_id => nil)
+        end
+      end
     end
   end
 end
